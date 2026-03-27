@@ -1,5 +1,5 @@
 /************************************************************
- * ACS Warranty API — server.js
+ * RepairFlow Warranty API — server.js
  * Node 18+, Render-compatible
  ************************************************************/
 const express = require("express");
@@ -24,19 +24,19 @@ app.get("/__version", (req, res) => {
 });
 
 /************************************************************
- * INTERNAL AUTH GATE (PHASE 2 INTERNAL TOOLS)
+ * INTERNAL AUTH GATE
  ************************************************************/
 function requireInternal(req, res, next) {
-  const expected = process.env.ACS_INTERNAL_KEY;
+  const expected = process.env.RF_INTERNAL_KEY;
   if (!expected) return res.status(401).send("Unauthorized");
 
-  const headerKey = req.headers["x-acs-key"];
+  const headerKey = req.headers["x-rf-key"];
 
   const cookie = req.headers.cookie || "";
   const cookieKey = cookie
     .split(";")
     .map(x => x.trim())
-    .find(x => x.startsWith("acs_internal_key="));
+    .find(x => x.startsWith("repairflow_internal_key="));
 
   const cookieVal = cookieKey ? cookieKey.split("=")[1] : null;
 
@@ -48,16 +48,16 @@ function requireInternal(req, res, next) {
  * QUICK HEALTH CHECK
  ************************************************************/
 app.get("/ping", (req, res) => {
-  res.json({ status: "ok", message: "Web app is live" });
+  res.json({ status: "ok", message: "RepairFlow is live" });
 });
 
 /************************************************************
- * INTERNAL LOGIN HELPER (TEMP)
+ * INTERNAL LOGIN HELPER
  ************************************************************/
 app.get("/internal/login", (req, res) => {
   res.setHeader(
     "Set-Cookie",
-    `acs_internal_key=${process.env.ACS_INTERNAL_KEY}; Path=/; Max-Age=86400; SameSite=Lax`
+    `repairflow_internal_key=${process.env.RF_INTERNAL_KEY}; Path=/; Max-Age=86400; SameSite=Lax`
   );
   res.send("Logged in ✅ You can now open /internal/intake");
 });
@@ -80,8 +80,8 @@ const transporter = nodemailer.createTransport({
  ************************************************************/
 async function sendCSEmail(data, rowNumber) {
   await transporter.sendMail({
-    from: `"ACS Warranty" <${process.env.SMTP_USER}>`,
-   to: "support@automotivecircuitsolutions.com",
+    from: `"RepairFlow Warranty" <${process.env.SMTP_USER}>`,
+    to: process.env.CS_EMAIL,
     subject: `New Warranty Claim – Order ${data.originalOrderNumber || "N/A"}`,
     text:
       `New warranty claim submitted\n\n` +
@@ -102,26 +102,26 @@ async function sendCustomerEmail(data) {
   if (!data.customerEmail) return;
 
   await transporter.sendMail({
-    from: `"Automotive Circuit Solutions" <${process.env.SMTP_USER}>`,
+    from: `"RepairFlow" <${process.env.SMTP_USER}>`,
     to: data.customerEmail,
     subject: "We received your warranty claim",
     text:
       `Hello ${data.customerName || ""},\n\n` +
-      `We’ve received your warranty claim and our team will review it shortly.\n\n` +
+      `We've received your warranty claim and our team will review it shortly.\n\n` +
       `Order #: ${data.originalOrderNumber || ""}\n` +
       `Warranty #: ${data.originalWarrantyNumber || ""}\n` +
       `Product: ${data.product || ""}\n\n` +
       `Issue:\n${data.issueDescription || ""}\n\n` +
       `If any of this looks incorrect, please reply to this email.\n\n` +
-      `Thank you,\nAutomotive Circuit Solutions`
+      `Thank you,\nRepairFlow`
   });
 }
 
 /************************************************************
- * WARRANTY SUBMISSION ENDPOINT (PHASE 1)
+ * WARRANTY SUBMISSION ENDPOINT
  ************************************************************/
-  app.post("/warranty", async (req, res) => {
-    try {
+app.post("/warranty", async (req, res) => {
+  try {
     const r = await fetch(process.env.PHASE2_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -141,13 +141,9 @@ async function sendCustomerEmail(data) {
     res.status(500).json({ error: err.message });
   }
 });
+
 /************************************************************
- * ✅ WARRANTY LOOKUP (GET) — PROXY TO APPS SCRIPT (NO CORS)
- * URL: /warranty/lookup?order=12345
- ************************************************************/
-/************************************************************
- * ✅ WARRANTY LOOKUP — PROXY TO APPS SCRIPT (FIXED)
- * URL: /warranty/lookup?order=12345
+ * WARRANTY LOOKUP
  ************************************************************/
 app.get("/warranty/lookup", async (req, res) => {
   try {
@@ -156,7 +152,7 @@ app.get("/warranty/lookup", async (req, res) => {
       return res.status(400).json({ status: "error", message: "Missing order" });
     }
 
-    const scriptUrl = process.env.PHASE2_SCRIPT_URL; // ✅ IMPORTANT
+    const scriptUrl = process.env.PHASE2_SCRIPT_URL;
     if (!scriptUrl) {
       return res.status(500).json({
         status: "error",
@@ -166,11 +162,11 @@ app.get("/warranty/lookup", async (req, res) => {
 
     const payload = {
       action: "lookup",
-      key: process.env.PHASE2_KEY || "acs_phase2_2026_change_me",
+      key: process.env.PHASE2_KEY || "repairflow_phase2_demo",
       originalOrderNumber: order
     };
 
-    const r = await fetch(scriptUrl, { // ✅ IMPORTANT
+    const r = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -192,7 +188,6 @@ app.get("/warranty/lookup", async (req, res) => {
     return res.status(500).json({ status: "error", error: err.message });
   }
 });
-
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
@@ -222,7 +217,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
       console.error("Phase 2 proxy returned non-JSON:", text.slice(0, 600));
       return res.status(500).json({
         status: "error",
-        message: "Phase 2 Apps Script did not return JSON (HTML returned).",
+        message: "Phase 2 Apps Script did not return JSON.",
         preview: text.slice(0, 600)
       });
     }
@@ -234,7 +229,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 });
 
 /************************************************************
- * INTERNAL PAGE HTML GENERATOR (Intake/Production)
+ * INTERNAL PAGE HTML GENERATOR
  ************************************************************/
 function getInternalPageHtml(cfg) {
   const optionHtml = cfg.options.map(v => `<option>${v}</option>`).join("");
@@ -291,7 +286,7 @@ async function lookup() {
   const data = await r.json();
 
   if (data.status === "not_found") return alert("No match found.");
-  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status === "multiple") return alert("Multiple matches found.");
   if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
   const match = data.matches[0];
@@ -339,7 +334,7 @@ app.get("/internal/intake", requireInternal, (req, res) => {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ACS Warranty – Receiving Intake</title>
+  <title>RepairFlow – Receiving Intake</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
@@ -350,7 +345,7 @@ app.get("/internal/intake", requireInternal, (req, res) => {
   </style>
 </head>
 <body>
-  <h2>ACS Warranty – Receiving Intake</h2>
+  <h2>RepairFlow – Receiving Intake</h2>
   <p class="small">Lookup by <b>Original Order #</b> → Update <b>Intake Stage</b> + auto-assign <b>Internal Warranty #</b></p>
 
   <label>Original Order #</label>
@@ -391,7 +386,7 @@ async function lookup() {
   const data = await r.json();
 
   if (data.status === "not_found") return alert("No match found.");
-  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status === "multiple") return alert("Multiple matches found.");
   if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
   const match = data.matches[0];
@@ -410,7 +405,6 @@ async function save() {
 
   const intakeStage = document.getElementById("intakeStage").value;
 
-  // 1) Update Intake Stage
   const r1 = await fetch("/internal/api/phase2", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -428,7 +422,6 @@ async function save() {
     return;
   }
 
-  // 2) Assign Internal Warranty # (only fills if blank)
   const r2 = await fetch("/internal/api/phase2", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -455,7 +448,7 @@ app.get("/internal/production", requireInternal, (req, res) => {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ACS Warranty – Production</title>
+  <title>RepairFlow – Production</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
@@ -466,7 +459,7 @@ app.get("/internal/production", requireInternal, (req, res) => {
   </style>
 </head>
 <body>
-  <h2>ACS Warranty – Production</h2>
+  <h2>RepairFlow – Production</h2>
   <p class="small">Lookup by <b>Original Order #</b> → Update <b>Production Stage</b></p>
 
   <label>Original Order #</label>
@@ -474,41 +467,42 @@ app.get("/internal/production", requireInternal, (req, res) => {
   <button onclick="lookup()">Lookup</button>
 
   <div id="result" class="row" style="display:none;">
-  <div><b>Row:</b> <span id="rowNum"></span></div>
-  <div><b>Status:</b> <span id="status"></span></div>
-  <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
-  <hr/>
+    <div><b>Row:</b> <span id="rowNum"></span></div>
+    <div><b>Status:</b> <span id="status"></span></div>
+    <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
+    <hr/>
 
-  <label>Intake Stage</label>
-  <select id="intakeStage">
-    <option value=""></option>
-    <option>Not Started</option>
-    <option>In Intake</option>
-    <option>Intake Complete</option>
-  </select>
+    <label>Intake Stage</label>
+    <select id="intakeStage">
+      <option value=""></option>
+      <option>Not Started</option>
+      <option>In Intake</option>
+      <option>Intake Complete</option>
+    </select>
 
-  <hr/>
+    <hr/>
 
-  <label>Date Received</label>
-  <input type="date" id="dateReceived">
+    <label>Date Received</label>
+    <input type="date" id="dateReceived">
 
-  <label>New Order #</label>
-  <input type="text" id="newOrderNumber">
+    <label>New Order #</label>
+    <input type="text" id="newOrderNumber">
 
-  <label>New Warranty #</label>
-  <input type="text" id="newWarrantyNumber">
+    <label>New Warranty #</label>
+    <input type="text" id="newWarrantyNumber">
 
-  <label>Technician Assigned</label>
-  <select id="technicianAssigned">
-    <option value=""></option>
-    <option>Tech 1</option>
-    <option>Tech 2</option>
-    <option>Tech 3</option>
-  </select>
+    <label>Technician Assigned</label>
+    <select id="technicianAssigned">
+      <option value=""></option>
+      <option>Alex Martinez</option>
+      <option>Jordan Lee</option>
+      <option>Sam Patel</option>
+      <option>Chris Nguyen</option>
+    </select>
 
-  <button onclick="save()">Save Intake</button>
-  <div id="msg"></div>
-</div>
+    <button onclick="save()">Save</button>
+    <div id="msg"></div>
+  </div>
 
 <script>
 let currentRow = null;
@@ -526,7 +520,7 @@ async function lookup() {
   const data = await r.json();
 
   if (data.status === "not_found") return alert("No match found.");
-  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status === "multiple") return alert("Multiple matches found.");
   if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
   const match = data.matches[0];
@@ -535,28 +529,13 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
-
-  const ow =
-    match.originalWarrantyNumber ||
-    match.originalWarranty ||
-    match["Original Warranty #"] ||
-    "";
-
-  document.getElementById("owNum").innerText = ow ? ow : "(blank)";
-
   document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
-  document.getElementById("productionStage").value = match.productionStage || "";
+  document.getElementById("intakeStage").value = match.intakeStage || "";
   document.getElementById("msg").innerHTML = "";
 }
 
 async function save() {
   if (!currentRow) return alert("Lookup a claim first.");
-
-  const intakeStage = document.getElementById("intakeStage").value;
-  const dateReceived = document.getElementById("dateReceived").value;
-  const newOrderNumber = document.getElementById("newOrderNumber").value;
-  const newWarrantyNumber = document.getElementById("newWarrantyNumber").value;
-  const technicianAssigned = document.getElementById("technicianAssigned").value;
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -565,25 +544,19 @@ async function save() {
       action: "update",
       row: currentRow,
       updates: {
-        "Intake Stage": intakeStage,
-        "Date Received": dateReceived,
-        "New Order #": newOrderNumber,
-        "New Warranty #": newWarrantyNumber,
-        "Technician Assigned": technicianAssigned
+        "Intake Stage": document.getElementById("intakeStage").value,
+        "Date Received": document.getElementById("dateReceived").value,
+        "New Order #": document.getElementById("newOrderNumber").value,
+        "New Warranty #": document.getElementById("newWarrantyNumber").value,
+        "Technician Assigned": document.getElementById("technicianAssigned").value
       }
     })
   });
 
   const data = await r.json();
-
-  if (data.status !== "ok") {
-    document.getElementById("msg").innerHTML =
-      "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
-    return;
-  }
-
-  document.getElementById("msg").innerHTML =
-    "<p class='ok'>Saved ✅</p>";
+  document.getElementById("msg").innerHTML = (data.status === "ok")
+    ? "<p class='ok'>Saved ✅</p>"
+    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
 }
 </script>
 </body>
@@ -591,14 +564,14 @@ async function save() {
 });
 
 /************************************************************
- * INTERNAL PAGE: QC (auto-load reason codes from Apps Script)
+ * INTERNAL PAGE: QC
  ************************************************************/
 app.get("/internal/qc", requireInternal, (req, res) => {
   res.send(`<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ACS Warranty – QC</title>
+  <title>RepairFlow – QC</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 750px; margin: auto; }
     input, select, textarea, button { padding: 10px; margin: 6px 0; width: 100%; }
@@ -610,7 +583,7 @@ app.get("/internal/qc", requireInternal, (req, res) => {
   </style>
 </head>
 <body>
-  <h2>ACS Warranty – QC</h2>
+  <h2>RepairFlow – QC</h2>
   <p class="small">Lookup by <b>Original Order #</b> → Update <b>QC Result / Reason / Notes</b></p>
 
   <label>Original Order #</label>
@@ -629,7 +602,7 @@ app.get("/internal/qc", requireInternal, (req, res) => {
       <option>Fail</option>
     </select>
 
-    <label>AE: QC Reason Code</label>
+    <label>QC Reason Code</label>
     <select id="qcReasonCode">
       <option value="">Loading…</option>
     </select>
@@ -646,8 +619,6 @@ let currentRow = null;
 
 async function loadReasons(selected = "") {
   const dropdown = document.getElementById("qcReasonCode");
-
-  // ✅ show loading immediately
   dropdown.innerHTML = "<option value=''>Loading…</option>";
 
   const r = await fetch("/internal/api/phase2", {
@@ -657,8 +628,6 @@ async function loadReasons(selected = "") {
   });
 
   const data = await r.json();
-
-  // ✅ wipe and rebuild
   dropdown.innerHTML = "<option value=''></option>";
 
   if (data.status !== "ok") {
@@ -689,7 +658,7 @@ async function lookup() {
   const data = await r.json();
 
   if (data.status === "not_found") return alert("No match found.");
-  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status === "multiple") return alert("Multiple matches found.");
   if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
   const match = data.matches[0];
@@ -698,22 +667,15 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
-
   document.getElementById("qcResult").value = match.qcResult || "";
   document.getElementById("qcFailureNotes").value = match.qcFailureNotes || "";
 
-  // ✅ THIS is the missing line that makes it work
   await loadReasons(match.qcReasonCode || "");
-
   document.getElementById("msg").innerHTML = "";
 }
 
 async function save() {
   if (!currentRow) return alert("Lookup a claim first.");
-
-  const qcResult = document.getElementById("qcResult").value;
-  const qcReasonCode = document.getElementById("qcReasonCode").value;
-  const qcFailureNotes = document.getElementById("qcFailureNotes").value.trim();
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -722,17 +684,15 @@ async function save() {
       action: "update",
       row: currentRow,
       updates: {
-        "QC Result": qcResult,
-        "AE: QC Reason Code": qcReasonCode,
-        "QC Failure Notes": qcFailureNotes
+        "QC Result": document.getElementById("qcResult").value,
+        "QC Reason Code": document.getElementById("qcReasonCode").value,
+        "QC Failure Notes": document.getElementById("qcFailureNotes").value.trim()
       }
     })
   });
 
   const data = await r.json();
-  const msg = document.getElementById("msg");
-
-  msg.innerHTML = (data.status === "ok")
+  document.getElementById("msg").innerHTML = (data.status === "ok")
     ? "<p class='ok'>Saved ✅</p>"
     : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
 }
@@ -745,5 +705,5 @@ async function save() {
  * SERVER START
  ************************************************************/
 app.listen(PORT, () => {
-  console.log("🚀 ACS Warranty API running on port", PORT);
+  console.log("🚀 RepairFlow Warranty API running on port", PORT);
 });

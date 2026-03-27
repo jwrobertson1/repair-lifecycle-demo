@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ACS Warranty Claim</title>
+<title>RepairFlow — Warranty Claim</title>
 
 <style>
 body {
@@ -19,11 +19,31 @@ body {
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
+.brand {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.brand-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  letter-spacing: -1px;
+}
+.brand-name span {
+  color: #0b8457;
+}
+.brand-tag {
+  font-size: 0.75rem;
+  color: #888;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
 label { font-weight: 600; display:block; margin-top:.75rem; }
 input, textarea, select {
   width:100%;
   padding:.5rem;
   margin-top:.25rem;
+  box-sizing: border-box;
 }
 button {
   background:#0b8457;
@@ -31,7 +51,9 @@ button {
   border:none;
   padding:.6rem .9rem;
   cursor:pointer;
+  border-radius: 4px;
 }
+button:hover { background: #096e47; }
 .row {
   display:flex;
   gap:8px;
@@ -40,6 +62,16 @@ button {
 .locked {
   background:#f0f0f0;
 }
+.demo-banner {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #856404;
+  text-align: center;
+  margin-bottom: 1rem;
+}
 </style>
 </head>
 
@@ -47,93 +79,98 @@ button {
 
 <div class="container">
 
-<div style="text-align:center;margin-bottom:1rem;">
-  <img src="/logo.png" style="max-width:260px;width:100%;">
-</div>
+  <div class="brand">
+    <div class="brand-name">Repair<span>Flow</span></div>
+    <div class="brand-tag">Warranty Management System</div>
+  </div>
 
-<h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
+  <div class="demo-banner">
+    🔧 Demo Environment — Simulated data for portfolio purposes
+  </div>
 
-<form id="warranty-form">
+  <h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
 
-<label>Source *</label>
-<select name="source" required>
-  <option value="">Select</option>
-  <option>Shopify</option>
-  <option>eBay</option>
-  <option>Walk-in</option>
-  <option>Other</option>
-</select>
+  <form id="warranty-form">
 
-<label>Customer Name *</label>
-<input name="customerName" required>
+    <label>Source *</label>
+    <select name="source" required>
+      <option value="">Select</option>
+      <option>Shopify</option>
+      <option>eBay</option>
+      <option>Walk-in</option>
+      <option>Other</option>
+    </select>
 
-<label>Email</label>
-<input type="email" name="customerEmail">
+    <label>Customer Name *</label>
+    <input name="customerName" required>
 
-<label>Original Order # *</label>
-<div class="row">
-  <input name="originalOrderNumber" id="order" required>
-  <button type="button" id="lookup-btn">Lookup</button>
-</div>
+    <label>Email</label>
+    <input type="email" name="customerEmail">
 
-<label>Original Order Date</label>
-<input type="date" name="originalOrderDate">
+    <label>Original Order # *</label>
+    <div class="row">
+      <input name="originalOrderNumber" id="order" required>
+      <button type="button" id="lookup-btn">Lookup</button>
+    </div>
 
-<label>Original Warranty #</label>
-<input name="originalWarrantyNumber">
+    <label>Original Order Date</label>
+    <input type="date" name="originalOrderDate">
 
-<label>Previous Warranty Claim Date</label>
-<input type="date" name="previousWarrantyClaimDate">
+    <label>Original Warranty #</label>
+    <input name="originalWarrantyNumber">
 
-<label>Product *</label>
-<input name="product" required>
+    <label>Previous Warranty Claim Date</label>
+    <input type="date" name="previousWarrantyClaimDate">
 
-<label>Issue Description *</label>
-<textarea name="issueDescription" required></textarea>
+    <label>Product *</label>
+    <input name="product" required>
 
-<label>UPC</label>
-<input name="upc">
+    <label>Issue Description *</label>
+    <textarea name="issueDescription" required></textarea>
 
-<!-- INTERNAL ONLY -->
-<div id="internal-fields" style="display:none; border-top:1px solid #ddd; margin-top:20px; padding-top:15px;">
+    <label>UPC</label>
+    <input name="upc">
 
-  <h3>Internal Use Only</h3>
+    <!-- INTERNAL ONLY -->
+    <div id="internal-fields" style="display:none; border-top:1px solid #ddd; margin-top:20px; padding-top:15px;">
 
-  <label>Date Received</label>
-  <input type="date" name="dateReceived">
+      <h3>Internal Use Only</h3>
 
-  <label>New Order #</label>
-  <input name="newOrderNumber">
+      <label>Date Received</label>
+      <input type="date" name="dateReceived">
 
-  <label>New Warranty #</label>
-  <input name="newWarrantyNumber">
+      <label>New Order #</label>
+      <input name="newOrderNumber">
 
-  <label>Technician Assigned</label>
-  <select name="technicianAssigned">
-    <option value=""></option>
-    <option>Colton Snow</option>
-    <option>Lance Monohan</option>
-    <option>Igor Gantyuk</option>
-    <option>Maxim Procosev</option>
-    <option>Other</option>
-  </select>
+      <label>New Warranty #</label>
+      <input name="newWarrantyNumber">
 
-</div>
+      <label>Technician Assigned</label>
+      <select name="technicianAssigned">
+        <option value=""></option>
+        <option>Alex Martinez</option>
+        <option>Jordan Lee</option>
+        <option>Sam Patel</option>
+        <option>Chris Nguyen</option>
+        <option>Other</option>
+      </select>
 
-<button type="submit" style="margin-top:1rem;width:100%;">
-Submit Warranty
-</button>
+    </div>
 
-</form>
+    <button type="submit" style="margin-top:1rem;width:100%;">
+      Submit Warranty
+    </button>
+
+  </form>
 
 </div>
 
 <script>
-const API_BASE = "https://acs-warranty-api.onrender.com";
+const API_BASE = "REPLACE_WITH_YOUR_RENDER_URL";
 
 /* ================= SHOW INTERNAL FIELDS IF LOGGED IN ================= */
 window.addEventListener("load", function () {
-  if (document.cookie.includes("acs_internal_key=")) {
+  if (document.cookie.includes("repairflow_internal_key=")) {
     const internalSection = document.getElementById("internal-fields");
     if (internalSection) {
       internalSection.style.display = "block";
