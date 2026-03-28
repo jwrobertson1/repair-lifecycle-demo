@@ -50,6 +50,10 @@ function requireInternal(req, res, next) {
 app.get("/ping", (req, res) => {
   res.json({ status: "ok", message: "RepairFlow is live" });
 });
+
+/************************************************************
+ * DEBUG LOOKUP
+ ************************************************************/
 app.get("/debug/lookup", async (req, res) => {
   const scriptUrl = process.env.PHASE2_SCRIPT_URL;
   const payload = {
@@ -66,11 +70,7 @@ app.get("/debug/lookup", async (req, res) => {
   const text = await r.text();
   res.send(`<pre>STATUS: ${r.status}\n\nBODY:\n${text}</pre>`);
 });
-```
 
-Commit and push, then open this in your browser:
-```
-https://repair-lifecycle-demo.onrender.com/debug/lookup
 /************************************************************
  * INTERNAL LOGIN HELPER
  ************************************************************/
