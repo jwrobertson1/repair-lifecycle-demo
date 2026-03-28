@@ -242,6 +242,27 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 });
 
 /************************************************************
+ * PUBLIC ANALYTICS DATA — no auth required (demo)
+ ************************************************************/
+app.post("/analytics/data", async (req, res) => {
+  try {
+    const r = await scriptFetch({
+      action: "analytics",
+      key: process.env.PHASE2_KEY || "repairflow_phase2_demo"
+    });
+    const text = await r.text();
+    try {
+      return res.json(JSON.parse(text));
+    } catch {
+      return res.status(502).json({ status: "error", message: "Apps Script did not return JSON" });
+    }
+  } catch (err) {
+    console.error("Analytics error:", err);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+/************************************************************
  * INTERNAL PAGE HTML GENERATOR
  ************************************************************/
 function getInternalPageHtml(cfg) {
