@@ -246,7 +246,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 /************************************************************
  * INTERNAL PAGES: INTAKE
  ************************************************************/
-app.get("/internal/intake", requireInternal, (req, res) => {
+app.get("/internal/intake", (req, res) => {
   res.send(`<!doctype html>
 <html>
 <head>
@@ -352,7 +352,7 @@ async function save() {
 /************************************************************
  * INTERNAL PAGES: PRODUCTION
  ************************************************************/
-app.get("/internal/production", requireInternal, (req, res) => {
+app.get("/internal/production", (req, res) => {
   res.send(`<!doctype html>
 <html>
 <head>
@@ -470,7 +470,7 @@ async function save() {
 /************************************************************
  * INTERNAL PAGE: QC
  ************************************************************/
-app.get("/internal/qc", requireInternal, (req, res) => {
+app.get("/internal/qc", (req, res) => {
   res.send(`<!doctype html>
 <html>
 <head>
