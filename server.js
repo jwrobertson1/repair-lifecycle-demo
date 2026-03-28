@@ -24,30 +24,6 @@ app.get("/__version", (req, res) => {
 });
 
 /************************************************************
- * APPS SCRIPT HELPER — sends payload as GET query param
- * because Google redirects POST to GET
- ************************************************************/
-async function scriptFetch(payload) {
-  const url = process.env.PHASE2_SCRIPT_URL + "?payload=" + encodeURIComponent(JSON.stringify(payload));
-  const r = await fetch(url);
-  return r;
-}
-
-/************************************************************
- * DEBUG LOOKUP
- ************************************************************/
-app.get("/debug/lookup", async (req, res) => {
-  const payload = {
-    action: "lookup",
-    key: process.env.PHASE2_KEY || "repairflow_phase2_demo",
-    originalOrderNumber: "RF-10042"
-  };
-  const r = await scriptFetch(payload);
-  const text = await r.text();
-  res.send(`<pre>STATUS: ${r.status}\n\nBODY:\n${text}</pre>`);
-});
-
-/************************************************************
  * INTERNAL AUTH GATE
  ************************************************************/
 function requireInternal(req, res, next) {
@@ -85,7 +61,12 @@ app.get("/debug/lookup", async (req, res) => {
     key: process.env.PHASE2_KEY || "repairflow_phase2_demo",
     originalOrderNumber: "RF-10042"
   };
-  const r = await scriptFetch(payload);
+  const r = await fetch(scriptUrl + "?", {
+    method: "POST",
+    redirect: "follow",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(payload)
+  });
   const text = await r.text();
   res.send(`<pre>STATUS: ${r.status}\n\nBODY:\n${text}</pre>`);
 });
@@ -161,7 +142,12 @@ async function sendCustomerEmail(data) {
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
-    const r = await scriptFetch(req.body);
+    const r = await fetch(process.env.PHASE2_SCRIPT_URL + "?", {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(req.body)
+    });
 
     if (!r.ok) throw new Error(await r.text());
     const result = await r.json();
@@ -201,7 +187,12 @@ app.get("/warranty/lookup", async (req, res) => {
       originalOrderNumber: order
     };
 
-    const r = await scriptFetch(payload);
+    const r = await fetch(scriptUrl + "?", {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    });
 
     const text = await r.text();
 
@@ -233,7 +224,12 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 
     const payload = { ...req.body, key };
 
-    const r = await scriptFetch(payload);
+    const r = await fetch(scriptUrl + "?", {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    });
 
     const text = await r.text();
 
