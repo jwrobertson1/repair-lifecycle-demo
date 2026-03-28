@@ -299,7 +299,7 @@ async function loadData() {
     const res = await fetch(`${API_BASE}/internal/api/phase2`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'analytics' })
+      body: JSON.stringify({ action: 'analytics', key: 'repairflow_phase2_demo' })
     });
 
     const data = await res.json();
