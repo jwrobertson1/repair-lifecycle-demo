@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RepairFlow — Analytics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f5f7;
+      min-height: 100vh;
+    }
+
+    .nav {
+      background: #1a1a2e;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav .brand {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .nav .brand span { color: #0b8457; }
+
+    .nav a {
+      color: #ccc;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav a.active { background: #0b8457; color: #fff; }
+
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .header .subtitle {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .refresh-btn {
+      background: #0b8457;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .refresh-btn:hover { background: #096e47; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #0b8457;
+    }
+
+    .stat-card.blue { border-left-color: #2563eb; }
+    .stat-card.orange { border-left-color: #f59e0b; }
+    .stat-card.purple { border-left-color: #7c3aed; }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1a1a2e;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .chart-row.single {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .chart-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .chart-subtitle {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .error-msg {
+      background: #fee2e2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+
+    .demo-banner {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      color: #856404;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .stat-row { grid-template-columns: 1fr 1fr; }
+      .chart-row { grid-template-columns: 1fr; }
+      .container { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">Repair<span>Flow</span></div>
+  <a href="/">Warranty Form</a>
+  <a href="/internal/intake">Intake</a>
+  <a href="/internal/production">Production</a>
+  <a href="/internal/qc">QC</a>
+  <a href="/internal/analytics" class="active">Analytics</a>
+</nav>
+
+<div class="header">
+  <div>
+    <h1>Analytics Dashboard</h1>
+    <div class="subtitle">Live data from warranty claims</div>
+  </div>
+  <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+</div>
+
+<div class="container">
+  <div class="demo-banner">
+    🔧 Demo Environment — Showing live data from the RepairFlow demo sheet
+  </div>
+
+  <div id="error" class="error-msg" style="display:none;"></div>
+  <div id="loading" class="loading">Loading analytics...</div>
+  <div id="content" style="display:none;">
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Claims</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">In Production</div>
+        <div class="stat-value" id="stat-production">—</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">Intake Complete</div>
+        <div class="stat-value" id="stat-intake">—</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">Complete</div>
+        <div class="stat-value" id="stat-complete">—</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-title">Claims by Technician</div>
+        <div class="chart-subtitle">Total warranty claims assigned per technician</div>
+        <div class="chart-wrap">
+          <canvas id="techChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Claims by Source</div>
+        <div class="chart-subtitle">Breakdown of warranty claim origins</div>
+        <div class="chart-wrap">
+          <canvas id="sourceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-title">Claims by Intake Stage</div>
+        <div class="chart-subtitle">Current workflow status across all claims</div>
+        <div class="chart-wrap">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Source Distribution</div>
+        <div class="chart-subtitle">Percentage breakdown by claim source</div>
+        <div class="chart-wrap">
+          <canvas id="sourcePieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://repair-lifecycle-demo.onrender.com";
+
+let techChartInst, sourceChartInst, statusChartInst, sourcePieInst;
+
+const COLORS = [
+  '#0b8457', '#2563eb', '#f59e0b', '#7c3aed',
+  '#ef4444', '#06b6d4', '#84cc16', '#f97316'
+];
+
+function destroyCharts() {
+  [techChartInst, sourceChartInst, statusChartInst, sourcePieInst].forEach(c => {
+    if (c) c.destroy();
+  });
+}
+
+async function loadData() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('error').style.display = 'none';
+  destroyCharts();
+
+  try {
+    const res = await fetch(`${API_BASE}/internal/api/phase2`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'analytics' })
+    });
+
+    const data = await res.json();
+
+    if (data.status !== 'ok') {
+      throw new Error(data.message || 'Failed to load analytics');
+    }
+
+    renderDashboard(data);
+
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error').textContent = 'Error loading analytics: ' + err.message;
+  }
+}
+
+function renderDashboard(data) {
+  // Stats
+  document.getElementById('stat-total').textContent = data.totalClaims || 0;
+  document.getElementById('stat-production').textContent = data.byStatus['In Production'] || 0;
+  document.getElementById('stat-intake').textContent = data.byStatus['Intake Complete'] || 0;
+  document.getElementById('stat-complete').textContent = data.byStatus['Complete'] || 0;
+
+  // Tech bar chart
+  const techLabels = Object.keys(data.byTechnician);
+  const techValues = Object.values(data.byTechnician);
+
+  techChartInst = new Chart(document.getElementById('techChart'), {
+    type: 'bar',
+    data: {
+      labels: techLabels,
+      datasets: [{
+        label: 'Claims',
+        data: techValues,
+        backgroundColor: COLORS.slice(0, techLabels.length),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Source bar chart
+  const srcLabels = Object.keys(data.bySource);
+  const srcValues = Object.values(data.bySource);
+
+  sourceChartInst = new Chart(document.getElementById('sourceChart'), {
+    type: 'bar',
+    data: {
+      labels: srcLabels,
+      datasets: [{
+        label: 'Claims',
+        data: srcValues,
+        backgroundColor: COLORS.slice(0, srcLabels.length),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Status bar chart
+  const statLabels = Object.keys(data.byStatus);
+  const statValues = Object.values(data.byStatus);
+
+  statusChartInst = new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: statLabels,
+      datasets: [{
+        label: 'Claims',
+        data: statValues,
+        backgroundColor: ['#0b8457', '#2563eb', '#f59e0b', '#7c3aed', '#ef4444'],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Source pie chart
+  sourcePieInst = new Chart(document.getElementById('sourcePieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: srcLabels,
+      datasets: [{
+        data: srcValues,
+        backgroundColor: COLORS.slice(0, srcLabels.length),
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 16, font: { size: 12 } }
+        }
+      }
+    }
+  });
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+}
+
+// Load on page open
+loadData();
+</script>
+
+</body>
+</html>
