@@ -718,7 +718,7 @@ async function save() {
  * ANALYTICS DASHBOARD (public — demo data only)
  ************************************************************/
 app.get("/internal/analytics", (req, res) => {
-  res.sendFile("analytics.html", { root: "./Public" });
+  res.sendFile(__dirname + "/Public/analytics.html");
 });
 
 /************************************************************
