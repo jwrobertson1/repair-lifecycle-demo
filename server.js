@@ -50,7 +50,27 @@ function requireInternal(req, res, next) {
 app.get("/ping", (req, res) => {
   res.json({ status: "ok", message: "RepairFlow is live" });
 });
+app.get("/debug/lookup", async (req, res) => {
+  const scriptUrl = process.env.PHASE2_SCRIPT_URL;
+  const payload = {
+    action: "lookup",
+    key: process.env.PHASE2_KEY || "repairflow_phase2_demo",
+    originalOrderNumber: "RF-10042"
+  };
+  const r = await fetch(scriptUrl + "?", {
+    method: "POST",
+    redirect: "follow",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(payload)
+  });
+  const text = await r.text();
+  res.send(`<pre>STATUS: ${r.status}\n\nBODY:\n${text}</pre>`);
+});
+```
 
+Commit and push, then open this in your browser:
+```
+https://repair-lifecycle-demo.onrender.com/debug/lookup
 /************************************************************
  * INTERNAL LOGIN HELPER
  ************************************************************/
@@ -122,9 +142,10 @@ async function sendCustomerEmail(data) {
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
-    const r = await fetch(process.env.PHASE2_SCRIPT_URL, {
+    const r = await fetch(process.env.PHASE2_SCRIPT_URL + "?", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(req.body)
     });
 
@@ -166,9 +187,10 @@ app.get("/warranty/lookup", async (req, res) => {
       originalOrderNumber: order
     };
 
-    const r = await fetch(scriptUrl, {
+    const r = await fetch(scriptUrl + "?", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload)
     });
 
@@ -202,9 +224,10 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 
     const payload = { ...req.body, key };
 
-    const r = await fetch(scriptUrl, {
+    const r = await fetch(scriptUrl + "?", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload)
     });
 
