@@ -270,6 +270,14 @@
       </div>
     </div>
 
+  
+    <div style="background:#fff;border-radius:10px;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-top:4px;border-left:4px solid #f59e0b;">
+      <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#f59e0b;margin-bottom:6px;">Demo Note</div>
+      <p style="font-size:0.82rem;color:#555;line-height:1.7;margin:0;">
+        This analytics dashboard is powered by live data from the demo sheet (8 sample claims). The production system tracked 200+ real warranty claims and included additional reporting: <b>claims by UPC/product</b> for quality control flagging, <b>return age distribution</b> (0–1 month through 5+ years), and <b>technician performance trends</b> over time. Data updated in real time as units moved through each workstation via barcode scanning.
+      </p>
+    </div>
+
   </div>
 </div>
 
@@ -296,9 +304,10 @@ async function loadData() {
   destroyCharts();
 
   try {
-    const res = await fetch(`${API_BASE}/analytics/data`, {
+    const res = await fetch(`${API_BASE}/internal/api/phase2`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'analytics' })
     });
 
     const data = await res.json();
