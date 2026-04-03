@@ -304,7 +304,7 @@ async function loadData() {
   destroyCharts();
 
   try {
-    const res = await fetch(`${API_BASE}/internal/api/phase2`, {
+    const res = await fetch(`${API_BASE}/api/analytics`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'analytics', key: 'repairflow_phase2_demo' })

@@ -593,6 +593,16 @@ async function save() {
 /************************************************************
  * ANALYTICS DASHBOARD (public — demo data only)
  ************************************************************/
+app.post("/api/analytics", async (req, res) => {
+  try {
+    const payload = { action: "analytics", key: process.env.PHASE2_KEY };
+    const r = await scriptFetch(payload);
+    const text = await r.text();
+    return res.json(JSON.parse(text));
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
 app.get("/internal/analytics", (req, res) => {
   res.sendFile(__dirname + "/Public/analytics.html");
 });
